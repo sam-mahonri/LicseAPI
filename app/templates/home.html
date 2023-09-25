@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles/style.css') }}">
+    <title>Licse You API</title>
+</head>
+
+<body>
+    <div class="allScreen flex columnFlex absoluteCenterFlex" style="padding: 16px;">
+        <span class="expand"></span>
+        <img src="{{ url_for('static', filename='source/logos/icon.svg') }}" width="128px" height="128px" style="margin-bottom: -16px;">
+        <h1>Licse API</h1>
+        <h3>API oficial do Licse You</h3>
+        <p style="margin-top: 8px;">{{ version }}</p>
+        <button onclick="window.location.href = 'https://you.licse.com'" style="margin-top: 16px;">Ir para Licse You <i class="fa-solid fa-link"></i></button>
+        <button onclick="window.location.href = '/altdocs'" style="margin-top: 16px;">Ver a documentação <i class="fa-solid fa-book"></i></button>
+        
+        <span class="expand"></span>
+        <a href="https://ifsertao-pe.edu.br" target="_blank" style="margin-bottom: 16px;"><img src="https://www.ifsertao-pe.edu.br/templates/sj_news/images/blue/logo.png" height="42px"></a>
+        
+        
+        
+        <p>Nível de conhecimento atual: <b>{{ knowledge }}/100k</b></p>
+        <p>Local do servidor: <b>{{ serverLocal }}</b></p>
+        <p>API Codename: <b>{{ versionCodename }}</b></p>
+        <p style="opacity: 1; font-weight: 500;">© 2023 - Licse Project - Hommel Almeida e <a target="_blank" href="https://sammahonri.com">Sam Mahonri</a></p> 
+    </div>
+    
+</body>
+</html>
+

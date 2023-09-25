@@ -1,10 +1,11 @@
-from flask import Flask, request
+from flask import Flask, request, render_template
 from dotenv import load_dotenv, find_dotenv
 from flask_limiter import Limiter
 from app.limiter_config import LIMITER_ENABLED, LIMITER_STORAGE_URI, LIMITER_KEY_FUNC
 from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_cors import CORS
 import os
+from . import about_licse
 
 app = Flask(__name__)
 
@@ -18,6 +19,10 @@ limiter = Limiter(
         storage_uri=LIMITER_STORAGE_URI,
         enabled=LIMITER_ENABLED
     )
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('home.html', version=about_licse.about["version"], versionCodename=about_licse.about["codename"], knowledge=about_licse.about["knowledge"], serverLocal=about_licse.about["university"]), 404
 
 def create_app():
 
