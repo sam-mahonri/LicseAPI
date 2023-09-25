@@ -20,3 +20,10 @@ def get_timezone():
     load_dotenv(find_dotenv())
     return os.getenv('LICSE_TIMEZONE')
 
+def get_hostname():
+    load_dotenv(find_dotenv())
+    return os.getenv('LICSE_HOSTNAME')
+
+def get_firebaseapi():
+    load_dotenv(find_dotenv())
+    return os.getenv('LICSE_FIREBASE_API_KEY')

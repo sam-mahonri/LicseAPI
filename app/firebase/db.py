@@ -1,17 +1,13 @@
 from flask_restx import Namespace
 from app import limiter, api_models
-from app.db_config import get_timezone
+from app.db_config import get_timezone, get_firebaseapi
 from flask_restx import Resource
 from flask import session
-import datetime
-import pytz
-from . import db
+import datetime, pytz, requests
+from . import auth, db, get_user_info
 
 licse_db_ns = Namespace('licsedb')
-createUser_model = licse_db_ns.model('Create User in DB', api_models.dbCreateUser_model)
-readUser_model = licse_db_ns.model('Read User in DB', api_models.dbReadUser_model)
 updateUser_model = licse_db_ns.model('Update User in DB', api_models.dbUpdateUser_model)
-deleteUser_model = licse_db_ns.model('Delete User in DB', api_models.dbDeleteUser_model)
 
 createChat_model = licse_db_ns.model('Create chat in DB', api_models.dbCreateChat_model)
 createMessage_model = licse_db_ns.model('Create message in chat', api_models.dbCreateMessage_model)
@@ -19,51 +15,23 @@ readChat_model = licse_db_ns.model('Read chat in DB', api_models.dbReadChat_mode
 updateChatTitle_model = licse_db_ns.model('Update chat title in DB', api_models.dbUpdateChatTitle_model)
 deleteChat_model = licse_db_ns.model('Delete chat in DB', api_models.dbDeleteChat_model)
 
-@licse_db_ns.route('/user/create')
-class CreateUser(Resource):
-    @licse_db_ns.expect(createUser_model)
-    @limiter.limit("50 per minute")
-    def post(self):
-        user_data = licse_db_ns.payload
-
-        if not set(user_data['data'].keys()) <= api_models.allowed_user_keys:
-            return {'message': 'Tem certeza que esse dicionario possui uma chave válida? Verifique se a(s) chave(s) que você está tentando atualizar estão dentro do escopo de variáveis aceitas!'}, 401
-
-        data = user_data['data']
-
-        if not "currentToken" in session or not "currentId" in session:
-            return {'message': 'Nenhum usuário logado no momento! Faça login em "/login" antes de chamar esta rota!'}, 401
-
-        currentToken = session['currentToken']
-        currentId = session['currentId']
-        
-        try:
-            db.child("users").child(currentId).set(data, currentToken)
-            return {'message': 'Dado(s) criados(s) com êxito!'}, 200
-        except Exception as e:
-            return {'message': f'Erro ao criar o(s) dado(s): {str(e)}'}, 500
-
 @licse_db_ns.route('/user/read')
 class ReadUser(Resource):
-    @licse_db_ns.expect(readUser_model)
     @limiter.limit("50 per minute")
     def get(self):
-        user_data = licse_db_ns.payload
-
-        key = user_data['key']
 
         if not "currentToken" in session or not "currentId" in session:
-            return {'message': 'Nenhum usuário logado no momento! Faça login em "/login" antes de chamar esta rota!'}, 401
+            return {'licseError':'NO_USER_LOGGEDIN', 'message': 'Nenhum usuário logado no momento! Faça login em "/login" antes de chamar esta rota!'}, 401
 
         currentToken = session['currentToken']
         currentId = session['currentId']
         
         try:
-            gotData = db.child("users").child(currentId).child(key).get(currentToken)
+            gotData = db.child("users").child(currentId).get(currentToken)
             gotData = gotData.val()
             return {"gotData": gotData}, 200
         except Exception as e:
-            return {'message': f'Erro ao ler o(s) dado(s): {str(e)}'}, 500
+            return {'licseError':'ERROR_READ_USER', 'message': f'Erro ao ler o(s) dado(s): {str(e)}'}, 500
 
 @licse_db_ns.route('/user/update')
 class UpdateUser(Resource):
@@ -73,43 +41,22 @@ class UpdateUser(Resource):
         user_data = licse_db_ns.payload
 
         if not set(user_data['data'].keys()) <= api_models.allowed_user_keys:
-            return {'message': 'Tem certeza que esse dicionario possui uma chave válida? Verifique se a(s) chave(s) que você está tentando atualizar estão dentro do escopo de variáveis aceitas!'}, 401
+            return {'licseError':'DENIED_KEYS', 'message': 'Tem certeza que esse dicionario possui uma chave válida? Verifique se a(s) chave(s) que você está tentando atualizar estão dentro do escopo de variáveis aceitas!'}, 401
 
         data = user_data['data']
 
         if not "currentToken" in session or not "currentId" in session:
-            return {'message': 'Nenhum usuário logado no momento! Faça login em "/login" antes de chamar esta rota!'}, 401
+            return {'licseError':'NO_USER_LOGGEDIN', 'message': 'Nenhum usuário logado no momento! Faça login em "/login" antes de chamar esta rota!'}, 401
 
         currentToken = session['currentToken']
         currentId = session['currentId']
                 
         try:
             db.child("users").child(currentId).update(data, currentToken)
-            return {'message': 'Dado(s) atualizado(s) com êxito!'}, 200
+            return {'licseError':'SUCCESS_USER_UPDATED', 'message': 'Dado(s) atualizado(s) com êxito!'}, 200
         except Exception as e:
-            return {'message': f'Erro ao atualizar o(s) dado(s): {str(e)}'}, 500
+            return {'licseError':'ERROR_USER_UPDATED', 'message': f'Erro ao atualizar o(s) dado(s): {str(e)}'}, 500
 
-@licse_db_ns.route('/user/delete')
-class DeleteUser(Resource):
-    @licse_db_ns.expect(deleteUser_model)
-    @limiter.limit("50 per minute")
-    def delete(self):
-        user_data = licse_db_ns.payload
-
-        key = user_data['key']
-
-        if not "currentToken" in session or not "currentId" in session:
-            return {'message': 'Nenhum usuário logado no momento! Faça login em "/login" antes de chamar esta rota!'}, 401
-
-        currentToken = session['currentToken']
-        currentId = session['currentId']
-        
-        try:
-            db.child("users").child(currentId).child(key).remove(currentToken)
-            return {'message': 'Chave removida com êxito!'}, 200
-        except Exception as e:
-            return {'message': f'Erro ao remover a chave: {str(e)}'}, 500
-        
 @licse_db_ns.route('/chats/create')
 class CreateChat(Resource):
     @licse_db_ns.expect(createChat_model)
@@ -119,24 +66,37 @@ class CreateChat(Resource):
         newChat_title = chat_data['title']
 
         if not "currentToken" in session or not "currentId" in session:
-            return {'message': 'Nenhum usuário logado no momento! Faça login em "/login" antes de chamar esta rota!'}, 401
+            return {'licseError':'NO_USER_LOGGEDIN', 'message': 'Nenhum usuário logado no momento! Faça login em "/login" antes de chamar esta rota!'}, 401
 
         currentToken = session['currentToken']
         currentId = session['currentId']
 
+        user_info = get_user_info(currentToken)
+
+        if not user_info['emailVerified']:
+            return {'licseError':'NON_VERIFIED_EMAIL', 'message': 'Email não verificado! Você não pode continuar assim! chame "/send_email_verification" e tente novamente'}, 429
+
+        cur_timezone = get_timezone()
+
+        brasilia_tz = pytz.timezone(cur_timezone)
+
+        now = datetime.datetime.now(brasilia_tz)
+        now_iso = now.isoformat() + 'Z'
+
         chatStruct = {
             'chatTitle':newChat_title,
-            'messages':[]
+            'messages':[],
+            "datetime":now_iso
         }
 
         try:
             db.child("users").child(currentId).child('chats').push(chatStruct, currentToken)
-            return {'message': 'Chat criado com êxito!'}, 200
+            return {'licseError':'SUCCESS_CREATE_CHAT', 'message': 'Chat criado com êxito!'}, 200
         except Exception as e:
-            return {'message': f'Erro ao criar o chat: {str(e)}'}, 500
+            return {'licseError':'ERROR_CREATE_CHAT', 'message': f'Erro ao criar o chat: {str(e)}'}, 500
 
 @licse_db_ns.route('/chats/updatetitle')
-class CreateChat(Resource):
+class UpdateChat(Resource):
     @licse_db_ns.expect(updateChatTitle_model)
     @limiter.limit("10 per minute")
     def put(self):
@@ -145,16 +105,21 @@ class CreateChat(Resource):
         chatId_title = chat_data['chatId']
 
         if not "currentToken" in session or not "currentId" in session:
-            return {'message': 'Nenhum usuário logado no momento! Faça login em "/login" antes de chamar esta rota!'}, 401
+            return {'licseError':'NO_USER_LOGGEDIN', 'message': 'Nenhum usuário logado no momento! Faça login em "/login" antes de chamar esta rota!'}, 401
 
         currentToken = session['currentToken']
         currentId = session['currentId']
 
+        user_info = get_user_info(currentToken)
+
+        if not user_info['emailVerified']:
+            return {'licseError':'NON_VERIFIED_EMAIL', 'message': 'Email não verificado! Você não pode continuar assim! chame "/send_email_verification" e tente novamente'}, 429
+
         try:
             db.child("users").child(currentId).child('chats').child(chatId_title).update({'chatTitle':newChat_title}, currentToken)
-            return {'message': 'Título atualizado com êxito'}, 200
+            return {'licseError':'SUCCESS_CHAT_TITLE_UPDATE', 'message': 'Título atualizado com êxito'}, 200
         except Exception as e:
-            return {'message': f'Erro ao editar o título: {str(e)}'}, 500
+            return {'licseError':'ERROR_CHAT_TITLE_UPDATE', 'message': f'Erro ao editar o título: {str(e)}'}, 500
 
 @licse_db_ns.route('/chats/delete')
 class DeleteChat(Resource):
@@ -166,16 +131,21 @@ class DeleteChat(Resource):
         chat = chat_data['chatId']
 
         if not "currentToken" in session or not "currentId" in session:
-            return {'message': 'Nenhum usuário logado no momento! Faça login em "/login" antes de chamar esta rota!'}, 401
+            return {'licseError':'NO_USER_LOGGEDIN', 'message': 'Nenhum usuário logado no momento! Faça login em "/login" antes de chamar esta rota!'}, 401
 
         currentToken = session['currentToken']
         currentId = session['currentId']
         
+        user_info = get_user_info(currentToken)
+
+        if not user_info['emailVerified']:
+            return {'licseError':'NON_VERIFIED_EMAIL', 'message': 'Email não verificado! Você não pode continuar assim! chame "/send_email_verification" e tente novamente'}, 429
+
         try:
             db.child("users").child(currentId).child('chats').child(chat).remove(currentToken)
-            return {'message': 'Conversa removida com êxito'}, 200
+            return {'licseError':'SUCCESS_CHAT_DELETE', 'message': 'Conversa removida com êxito'}, 200
         except Exception as e:
-            return {'message': f'Erro ao remover a conversa: {str(e)}'}, 500
+            return {'licseError':'ERROR_CHAT_DELETE', 'message': f'Erro ao remover a conversa: {str(e)}'}, 500
         
 @licse_db_ns.route('/chats/read')
 class ReadChat(Resource):
@@ -187,17 +157,22 @@ class ReadChat(Resource):
         chatId = chat_data['chatId']
 
         if not "currentToken" in session or not "currentId" in session:
-            return {'message': 'Nenhum usuário logado no momento! Faça login em "/login" antes de chamar esta rota!'}, 401
+            return {'licseError':'NO_USER_LOGGEDIN', 'message': 'Nenhum usuário logado no momento! Faça login em "/login" antes de chamar esta rota!'}, 401
 
         currentToken = session['currentToken']
         currentId = session['currentId']
         
+        user_info = get_user_info(currentToken)
+
+        if not user_info['emailVerified']:
+            return {'licseError':'NON_VERIFIED_EMAIL', 'message': 'Email não verificado! Você não pode continuar assim! chame "/send_email_verification" e tente novamente'}, 429
+
         try:
             gotData = db.child("users").child(currentId).child('chats').child(chatId).get(currentToken)
             gotData = gotData.val()
             return {"gotData": gotData}, 200
         except Exception as e:
-            return {'message': f'Erro ao ler o chat: {str(e)}'}, 500
+            return {'licseError':'ERROR_CHAT_READ', 'message': f'Erro ao ler o chat: {str(e)}'}, 500
         
 @licse_db_ns.route('/chats/addmsg')
 class AddMessage(Resource):
@@ -210,7 +185,7 @@ class AddMessage(Resource):
         message = chat_data['message']
 
         if not "currentToken" in session or not "currentId" in session:
-            return {'message': 'Nenhum usuário logado no momento! Faça login em "/login" antes de chamar esta rota!'}, 401
+            return {'licseError':'NO_USER_LOGGEDIN', 'message': 'Nenhum usuário logado no momento! Faça login em "/login" antes de chamar esta rota!'}, 401
 
         currentToken = session['currentToken']
         currentId = session['currentId']
@@ -230,6 +205,6 @@ class AddMessage(Resource):
 
         try:
             db.child("users").child(currentId).child('chats').child(chatId).child('messages').push(chatStruct, currentToken)
-            return {'message': 'Mensagem salva com êxito'}, 200
+            return {'licseError':'SUCCESS_MSG_SAVED', 'message': 'Mensagem salva com êxito'}, 200
         except Exception as e:
-            return {'message': f'Erro ao salvar a mensagem: {str(e)}'}, 500
+            return {'licseError':'ERROR_MSG_SAVED', 'message': f'Erro ao salvar a mensagem: {str(e)}'}, 500

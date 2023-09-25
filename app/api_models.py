@@ -8,18 +8,14 @@ login_model = {
 register_model = {
     'email': fields.String(required=True, description='Endereço de e-mail do usuário'),
     'password': fields.String(required=True, description='Senha do usuário'),
-    'fullname': fields.String(required=True, description='Nome completo do usuário'),
-    'favcolor': fields.String(required=True, description='Cor do tema do usuário em HEX - Ex: #e62169 (Vermelho)'),
+    'fullName': fields.String(required=True, description='Nome completo do usuário'),
+    'favColor': fields.String(required=True, description='Cor do tema do usuário em HEX - Ex: #e62169 (Vermelho)'),
     'age': fields.Integer(required=True, description='Idade atual do novo usuário')
 }
 
 ### CRUD ###
 
 # C
-dbCreateUser_model = {
-    'data': fields.Raw(required=True, description='Dado(s) a ser(em) criado(s) em dicionario, por exemplo: {favColor:"#e62169"} ou aninhar mais chaves permitidas ao mesmo tempo, por exemplo: {"favColor":"....", "fullName":"...."}. Não se preocupe com as permissões, o usuário logado na sessão já carregará o Token e ID.'),
-}
-
 dbCreateChat_model = {
     'title': fields.String(required=True, description='Título do novo chat a ser criado')
 }
@@ -31,10 +27,6 @@ dbCreateMessage_model = {
 }
 
 # R
-dbReadUser_model = {
-    'key': fields.Raw(required=True, description='Qual chave ler? apenas a chave desejada, por exemplo favColor.')
-}
-
 dbReadChat_model = {
     'chatId': fields.String(required=True, description="ID do chat")
 }
@@ -50,9 +42,6 @@ dbUpdateChatTitle_model = {
 }
 
 # D
-dbDeleteUser_model = {
-    'key': fields.String(required=True, description='Qual chave deletar? apenas a chave desejada, por exemplo favColor.'),
-}
 
 dbDeleteChat_model = {
     'chatId': fields.String(required=True, description="ID do chat")
