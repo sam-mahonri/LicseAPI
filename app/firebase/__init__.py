@@ -1,6 +1,7 @@
 
 from app.db_config import get_config, get_firebaseapi
 import pyrebase, requests
+from flask import session
 
 pb_set = get_config()
 firebase = pyrebase.initialize_app(pb_set)
@@ -18,6 +19,25 @@ def get_user_info(currentToken):
     user_info = response.json()['users'][0]
 
     return user_info
+
+def verify_current_user():
+    if not "currentToken" in session or not "currentId" in session:
+        return False
+
+    currentToken = session['currentToken']
+
+    data = firebase.get_user_info(currentToken)
+
+    return data['emailVerified']
+
+def get_status_user_info():
+    if not "currentToken" in session or not "currentId" in session:
+        return {'licseError':'NO_USER_LOGGEDIN', 'message': 'Nenhum usuário logado no momento! Faça login em "/login" antes de chamar esta rota!'}, 401
+
+    currentToken = session['currentToken']
+    currentId = session['currentId']
+
+    return {"cT":currentToken, "cI":currentId}
 
 from . import auth
 from . import db

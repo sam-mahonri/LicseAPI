@@ -1,5 +1,5 @@
 from dotenv import load_dotenv, find_dotenv
-from flask import send_file, jsonify
+from flask import send_file, jsonify, render_template, make_response
 from flask_restx import Resource, Namespace
 from app import limiter, about_licse
 import os

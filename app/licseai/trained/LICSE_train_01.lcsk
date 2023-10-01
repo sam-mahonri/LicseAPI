@@ -1,0 +1,15 @@
+{
+    "licse_train_name":"train1",
+    
+    "cycles":10,
+    
+    "lmkeys":{
+        "Licse":[
+            "LY_SIMM_01"
+        ]
+    }
+
+    "lmresponse":{
+        "LY_SIMM_01":"Uma IA colaborativa educacional"
+    }
+}

@@ -59,7 +59,9 @@ class RegisterUser(Resource):
         user_data = {
             "fullName": fullname,
             "favColor": favcolor,
-            "age": age
+            "age": age,
+            "points":0,
+            "redflags":0
         }
 
         try:
@@ -109,7 +111,7 @@ class emailVerified(Resource):
     
 @licse_auth_ns.route("/delete_user")
 class deleteUser(Resource):
-    def post(self):
+    def delete(self):
         if not "currentToken" in session or not "currentId" in session:
             return {'licseError':'NO_USER_LOGGEDIN', 'message': 'Nenhum usuário logado no momento! Faça login em "/login" antes de chamar esta rota!'}, 401
 

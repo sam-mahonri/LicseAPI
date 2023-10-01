@@ -29,6 +29,7 @@ def create_app():
     from .resources import licse_status_ns, licse_chat_ns, licse_root_ns
     from .firebase.auth import licse_auth_ns
     from .firebase.db import licse_db_ns
+    from .licseai.letschat import licse_ai_ns
     from .extensions import api
 
     load_dotenv(find_dotenv())
@@ -40,6 +41,7 @@ def create_app():
     api.add_namespace(licse_status_ns)
     api.add_namespace(licse_auth_ns)
     api.add_namespace(licse_db_ns)
+    api.add_namespace(licse_ai_ns)
     api.add_namespace(licse_chat_ns)
     api.add_namespace(licse_root_ns)
 

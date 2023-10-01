@@ -47,20 +47,10 @@ dbDeleteChat_model = {
     'chatId': fields.String(required=True, description="ID do chat")
 }
 
-### CRUD ###
+### Licse AI ###
 
-post_model = {
-    'id': fields.Integer(readonly=True, description='ID da postagem'),
-    'title': fields.String(required=True, description='Título da postagem'),
-    'content': fields.String(required=True, description='Conteúdo da postagem'),
-    'author_id': fields.Integer(required=True, description='ID do autor da postagem'),
-}
-
-comment_model = {
-    'id': fields.Integer(readonly=True, description='ID do comentário'),
-    'text': fields.String(required=True, description='Texto do comentário'),
-    'post_id': fields.Integer(required=True, description='ID da postagem associada'),
-    'user_id': fields.Integer(required=True, description='ID do usuário que fez o comentário'),
+sayhi_model = {
+    'prompt': fields.String(required=True, description="Mensagem a ser enviada para o Licse You")
 }
 
 allowed_user_keys = {
