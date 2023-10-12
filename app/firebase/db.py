@@ -2,7 +2,6 @@ from flask_restx import Namespace
 from app import limiter, api_models
 from app.db_config import get_timezone, get_firebaseapi
 from flask_restx import Resource
-from flask import session
 import datetime, pytz, requests
 from . import auth, db, get_user_info
 
@@ -14,17 +13,17 @@ createMessage_model = licse_db_ns.model('Create message in chat', api_models.dbC
 readChat_model = licse_db_ns.model('Read chat in DB', api_models.dbReadChat_model)
 updateChatTitle_model = licse_db_ns.model('Update chat title in DB', api_models.dbUpdateChatTitle_model)
 deleteChat_model = licse_db_ns.model('Delete chat in DB', api_models.dbDeleteChat_model)
+cred_model = licse_db_ns.model('Send email', api_models.send_email_ver)
 
 @licse_db_ns.route('/user/read')
 class ReadUser(Resource):
+    @licse_db_ns.expect(cred_model)
     @limiter.limit("50 per minute")
     def get(self):
-
-        if not "currentToken" in session or not "currentId" in session:
-            return {'licseError':'NO_USER_LOGGEDIN', 'message': 'Nenhum usuário logado no momento! Faça login em "/login" antes de chamar esta rota!'}, 401
-
-        currentToken = session['currentToken']
-        currentId = session['currentId']
+        user_data = licse_db_ns.payload
+       
+        currentToken = user_data['token']
+        currentId = user_data['userId']
         
         try:
             gotData = db.child("users").child(currentId).get(currentToken)
@@ -45,11 +44,8 @@ class UpdateUser(Resource):
 
         data = user_data['data']
 
-        if not "currentToken" in session or not "currentId" in session:
-            return {'licseError':'NO_USER_LOGGEDIN', 'message': 'Nenhum usuário logado no momento! Faça login em "/login" antes de chamar esta rota!'}, 401
-
-        currentToken = session['currentToken']
-        currentId = session['currentId']
+        currentToken = user_data['token']
+        currentId = user_data['userId']
                 
         try:
             db.child("users").child(currentId).update(data, currentToken)
@@ -60,16 +56,14 @@ class UpdateUser(Resource):
 @licse_db_ns.route('/chats/create')
 class CreateChat(Resource):
     @licse_db_ns.expect(createChat_model)
-    @limiter.limit("2 per minute")
+    @limiter.limit("70 per minute")
     def post(self):
         chat_data = licse_db_ns.payload
         newChat_title = chat_data['title']
 
-        if not "currentToken" in session or not "currentId" in session:
-            return {'licseError':'NO_USER_LOGGEDIN', 'message': 'Nenhum usuário logado no momento! Faça login em "/login" antes de chamar esta rota!'}, 401
 
-        currentToken = session['currentToken']
-        currentId = session['currentId']
+        currentToken = chat_data['token']
+        currentId = chat_data['userId']
 
         user_info = get_user_info(currentToken)
 
@@ -98,17 +92,14 @@ class CreateChat(Resource):
 @licse_db_ns.route('/chats/updatetitle')
 class UpdateChat(Resource):
     @licse_db_ns.expect(updateChatTitle_model)
-    @limiter.limit("10 per minute")
+    @limiter.limit("100 per minute")
     def put(self):
         chat_data = licse_db_ns.payload
         newChat_title = chat_data['newTitle']
         chatId_title = chat_data['chatId']
 
-        if not "currentToken" in session or not "currentId" in session:
-            return {'licseError':'NO_USER_LOGGEDIN', 'message': 'Nenhum usuário logado no momento! Faça login em "/login" antes de chamar esta rota!'}, 401
-
-        currentToken = session['currentToken']
-        currentId = session['currentId']
+        currentToken = chat_data['token']
+        currentId = chat_data['userId']
 
         user_info = get_user_info(currentToken)
 
@@ -124,17 +115,14 @@ class UpdateChat(Resource):
 @licse_db_ns.route('/chats/delete')
 class DeleteChat(Resource):
     @licse_db_ns.expect(deleteChat_model)
-    @limiter.limit("50 per minute")
+    @limiter.limit("70 per minute")
     def delete(self):
         chat_data = licse_db_ns.payload
 
         chat = chat_data['chatId']
 
-        if not "currentToken" in session or not "currentId" in session:
-            return {'licseError':'NO_USER_LOGGEDIN', 'message': 'Nenhum usuário logado no momento! Faça login em "/login" antes de chamar esta rota!'}, 401
-
-        currentToken = session['currentToken']
-        currentId = session['currentId']
+        currentToken = chat_data['token']
+        currentId = chat_data['userId']
         
         user_info = get_user_info(currentToken)
 
@@ -150,17 +138,14 @@ class DeleteChat(Resource):
 @licse_db_ns.route('/chats/read')
 class ReadChat(Resource):
     @licse_db_ns.expect(readChat_model)
-    @limiter.limit("50 per minute")
+    @limiter.limit("100 per minute")
     def get(self):
         chat_data = licse_db_ns.payload
 
         chatId = chat_data['chatId']
 
-        if not "currentToken" in session or not "currentId" in session:
-            return {'licseError':'NO_USER_LOGGEDIN', 'message': 'Nenhum usuário logado no momento! Faça login em "/login" antes de chamar esta rota!'}, 401
-
-        currentToken = session['currentToken']
-        currentId = session['currentId']
+        currentToken = chat_data['token']
+        currentId = chat_data['userId']
         
         user_info = get_user_info(currentToken)
 
@@ -177,18 +162,15 @@ class ReadChat(Resource):
 @licse_db_ns.route('/chats/addmsg')
 class AddMessage(Resource):
     @licse_db_ns.expect(createMessage_model)
-    @limiter.limit("5 per minute")
+    @limiter.limit("500 per minute")
     def post(self):
         chat_data = licse_db_ns.payload
         chatId = chat_data['chatId']
         sender = chat_data['sender']
         message = chat_data['message']
 
-        if not "currentToken" in session or not "currentId" in session:
-            return {'licseError':'NO_USER_LOGGEDIN', 'message': 'Nenhum usuário logado no momento! Faça login em "/login" antes de chamar esta rota!'}, 401
-
-        currentToken = session['currentToken']
-        currentId = session['currentId']
+        currentToken = chat_data['token']
+        currentId = chat_data['userId']
 
         cur_timezone = get_timezone()
 
