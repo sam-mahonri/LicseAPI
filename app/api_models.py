@@ -73,6 +73,13 @@ sayhi_model = {
     'userId': fields.String(required=True, description='ID do usuário logado')
 }
 
+letsChat_model = {
+    'prompt': fields.String(required=True, description="Mensagem a ser enviada para o Licse You"),
+    'type': fields.String(required=True, description="Tipo de requisição: NONE, WEB, SUMMARIZE", default='WEB'),
+    'token': fields.String(required=True, description='Token do usuário logado'),
+    'userId': fields.String(required=True, description='ID do usuário logado')
+}
+
 allowed_user_keys = {
     "fullName",
     "favColor",

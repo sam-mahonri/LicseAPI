@@ -23,6 +23,7 @@ class LoginUser(Resource):
         try:
             user = auth.sign_in_with_email_and_password(email, password)
         except Exception as e:
+            print(e)
             return {'error': str(e)}, 400
         
         user_id = user['localId']

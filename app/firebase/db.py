@@ -84,9 +84,11 @@ class CreateChat(Resource):
         }
 
         try:
-            db.child("users").child(currentId).child('chats').push(chatStruct, currentToken)
-            return {'licseError':'SUCCESS_CREATE_CHAT', 'message': 'Chat criado com êxito!'}, 200
+            chatId = db.child("users").child(currentId).child('chats').push(chatStruct, currentToken)
+            print(chatId)
+            return {'licseError':'SUCCESS_CREATE_CHAT', 'message': 'Chat criado com êxito!', 'chatId':chatId['name']}, 200
         except Exception as e:
+            print(e)
             return {'licseError':'ERROR_CREATE_CHAT', 'message': f'Erro ao criar o chat: {str(e)}'}, 500
 
 @licse_db_ns.route('/chats/updatetitle')
@@ -133,6 +135,8 @@ class DeleteChat(Resource):
             db.child("users").child(currentId).child('chats').child(chat).remove(currentToken)
             return {'licseError':'SUCCESS_CHAT_DELETE', 'message': 'Conversa removida com êxito'}, 200
         except Exception as e:
+            print(chat)
+            print(e)
             return {'licseError':'ERROR_CHAT_DELETE', 'message': f'Erro ao remover a conversa: {str(e)}'}, 500
         
 @licse_db_ns.route('/chats/read')
